@@ -1,0 +1,48 @@
+RewriteEngine on
+RewriteCond $1 !^(index\.php|resources|robots\.txt)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php/$1 [L,QSA]
+
+#Hide server details
+ServerSignature Off
+
+#Disable directory listing
+Options -Indexes
+
+#Prevent access to hidden directory eg .svn/.DS_Store
+RedirectMatch 404 /\\..*(/.*|$)
+
+#Protect from SQL Injection scanner
+#RewriteCond %{HTTP_USER_AGENT} ^$ [OR]  
+#RewriteCond %{HTTP_USER_AGENT} ^(-|\.|') [OR]  
+RewriteCond %{HTTP_USER_AGENT} ^(.*)(<|>|%3C|%3E)(.*) [NC,OR]  
+#RewriteCond %{HTTP_USER_AGENT} ^(java|curl|wget)(.*) [NC,OR]  
+RewriteCond %{QUERY_STRING} ^.*(;|<|>|'|"|\)|%0A|%0D|%22|%27|%3C|%3E|%00).*(/\*|union|select|insert|cast|set|declare|drop|update|md5|benchmark).* [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} ^(.*)(libwww-perl|libwwwperl|snoopy|winhttp|python|nikto|scan|clshttp|archiver|loader|email|harvest|fetch|extract|grab|miner|suck|reaper|leach)(.*) [NC,OR]  
+RewriteCond %{REQUEST_URI} ^(/,|/;|/<|/>|/'|/`|/%2C|/%3C|/%3E|/%27|/////) [NC,OR]  
+RewriteCond %{HTTP_REFERER} ^(.*)(%00|%08|%09|%0A|%0B|%0C|%0D|%0E|%0F|%2C|<|>|'|%3C|%3E|%26%23|%27|%60)(.*) [NC,OR]  
+RewriteCond %{QUERY_STRING} ^(.*)(%00|%08|%09|%0A|%0B|%0C|%0D|%0E|%0F|%2C|%3C|%3E|%27|%26%23|%60)(.*) [NC,OR]  
+RewriteCond %{QUERY_STRING} ^(.*)('|-|<|>|,|/|\\|\.a|\.c|\.t|\.d|\.p|\.i|\.e|\.j)(.*) [NC,OR]  
+RewriteCond %{HTTP_COOKIE} ^(.*)(<|>|'|%3C|%3E|%27)(.*) [NC]  
+RewriteRule ^(.*)$ index.php [NC]
+
+#Protect from XSS
+RewriteCond %{QUERY_STRING} base64_encode.*\(.*\) [OR]
+RewriteCond %{QUERY_STRING} (\<|%3C).*script.*(\>|%3E) [NC,OR]
+RewriteCond %{QUERY_STRING} (\<|%3C).*iframe.*(\>|%3E) [NC,OR]
+RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
+RewriteCond %{QUERY_STRING} _REQUEST(=|\[|\%[0-9A-Z]{0,2})
+RewriteRule ^(.*)$ index_error.php [F,L]
+RewriteCond %{REQUEST_METHOD} ^(TRACE|TRACK)
+RewriteRule .* - [F]
+
+
+# Allow access from all domains for webfonts.
+# Alternatively you could only whitelist your
+# subdomains like "subdomain.example.com".
+<IfModule mod_headers.c>
+  <FilesMatch "\.(ttf|ttc|otf|eot|woff|woff2|css)$">
+    Header set Access-Control-Allow-Origin "*"
+  </FilesMatch>
+</IfModule>
